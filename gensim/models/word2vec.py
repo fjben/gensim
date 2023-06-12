@@ -448,7 +448,7 @@ class Word2Vec(utils.SaveLoad):
 
     def build_vocab(
             self, corpus_iterable=None, corpus_file=None, update=False, progress_per=10000,
-            keep_raw_vocab=False, trim_rule=None, mimic_in_vocab=None, mimic_init_original=True, **kwargs,
+            keep_raw_vocab=False, trim_rule=None, mimic_in_vocab=None, mimic_init_original=False, **kwargs,
         ):
         """Build vocabulary from a sequence of sentences (can be a once-only generator stream).
 
@@ -499,7 +499,7 @@ class Word2Vec(utils.SaveLoad):
 
     def build_vocab_from_freq(
             self, word_freq, keep_raw_vocab=False, corpus_count=None, trim_rule=None, update=False,
-            mimic_in_vocab=None, mimic_init_original=True
+            mimic_in_vocab=None, mimic_init_original=False
         ):
         """Build vocabulary from a dictionary of word frequencies.
 
@@ -847,7 +847,7 @@ class Word2Vec(utils.SaveLoad):
         if len(self.cum_table) > 0:
             assert self.cum_table[-1] == domain
 
-    def prepare_weights(self, update=False, mimic_in_vocab=None, mimic_init_original=True):
+    def prepare_weights(self, update=False, mimic_in_vocab=None, mimic_init_original=False):
         """Build tables and model weights based on final vocabulary settings."""
         # set initial input/projection and hidden weights
         if not update:
@@ -869,7 +869,7 @@ class Word2Vec(utils.SaveLoad):
         if self.negative:
             self.syn1neg = np.zeros((len(self.wv), self.layer1_size), dtype=REAL)
 
-    def update_weights(self, mimic_in_vocab=None, mimic_init_original=True):
+    def update_weights(self, mimic_in_vocab=None, mimic_init_original=False):
         """Copy all the existing weights, and reset the weights for the newly added vocabulary."""
         logger.info("updating layer weights")
         # Raise an error if an online update is run before initial training on a corpus

@@ -375,16 +375,17 @@ class KeyedVectors(utils.SaveLoad):
         index = self.get_index(key)
         return self.expandos[attr][index]
 
-    def resize_vectors(self, seed=0, mimic_in_vocab=None, mimic_init_original=True):
+    def resize_vectors(self, seed=0, mimic_in_vocab=None, mimic_init_original=False):
         """Make underlying vectors match index_to_key size; random-initialize any new rows."""
         target_shape = (len(self.index_to_key), self.vector_size)
 
+        ##### confirm is this is doing what is supposed, either during initial training and update
         if ((mimic_in_vocab is not None) and (len(mimic_in_vocab)==1) and (mimic_in_vocab[0].endswith('_mimic'))):
             original_word = mimic_in_vocab[0][:-len('_mimic')]
-        else:
-            raise Exception
-        idx_to_key = self.index_to_key.index(original_word)
-        mimic_vector = self.vectors[idx_to_key]
+            idx_to_key = self.index_to_key.index(original_word)
+            mimic_vector = self.vectors[idx_to_key]
+        # else:
+        #     raise Exception
         if ((mimic_in_vocab is not None) and (mimic_init_original == True)):
             self.vectors = prep_vectors(target_shape, prior_vectors=self.vectors, seed=seed, mimic_vector=mimic_vector)
         else:
