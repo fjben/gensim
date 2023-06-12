@@ -448,7 +448,7 @@ class Word2Vec(utils.SaveLoad):
 
     def build_vocab(
             self, corpus_iterable=None, corpus_file=None, update=False, progress_per=10000,
-            keep_raw_vocab=False, trim_rule=None, **kwargs,
+            keep_raw_vocab=False, trim_rule=None, mimic_in_vocab=None, mimic_init_original=True, **kwargs,
         ):
         """Build vocabulary from a sequence of sentences (can be a once-only generator stream).
 
@@ -494,11 +494,12 @@ class Word2Vec(utils.SaveLoad):
         self.corpus_total_words = total_words
         report_values = self.prepare_vocab(update=update, keep_raw_vocab=keep_raw_vocab, trim_rule=trim_rule, **kwargs)
         report_values['memory'] = self.estimate_memory(vocab_size=report_values['num_retained_words'])
-        self.prepare_weights(update=update)
+        self.prepare_weights(update=update, mimic_in_vocab=mimic_in_vocab, mimic_init_original=mimic_init_original)
         self.add_lifecycle_event("build_vocab", update=update, trim_rule=str(trim_rule))
 
     def build_vocab_from_freq(
             self, word_freq, keep_raw_vocab=False, corpus_count=None, trim_rule=None, update=False,
+            mimic_in_vocab=None, mimic_init_original=True
         ):
         """Build vocabulary from a dictionary of word frequencies.
 
@@ -544,7 +545,7 @@ class Word2Vec(utils.SaveLoad):
         # trim by min_count & precalculate downsampling
         report_values = self.prepare_vocab(keep_raw_vocab=keep_raw_vocab, trim_rule=trim_rule, update=update)
         report_values['memory'] = self.estimate_memory(vocab_size=report_values['num_retained_words'])
-        self.prepare_weights(update=update)  # build tables & arrays
+        self.prepare_weights(update=update, mimic_in_vocab=mimic_in_vocab, mimic_init_original=mimic_init_original)  # build tables & arrays
 
     def _scan_vocab(self, sentences, progress_per, trim_rule):
         sentence_no = -1
@@ -846,13 +847,13 @@ class Word2Vec(utils.SaveLoad):
         if len(self.cum_table) > 0:
             assert self.cum_table[-1] == domain
 
-    def prepare_weights(self, update=False):
+    def prepare_weights(self, update=False, mimic_in_vocab=None, mimic_init_original=True):
         """Build tables and model weights based on final vocabulary settings."""
         # set initial input/projection and hidden weights
         if not update:
             self.init_weights()
         else:
-            self.update_weights()
+            self.update_weights(mimic_in_vocab=mimic_in_vocab, mimic_init_original=mimic_init_original)
 
     @deprecated("Use gensim.models.keyedvectors.pseudorandom_weak_vector() directly")
     def seeded_vector(self, seed_string, vector_size):
@@ -868,7 +869,7 @@ class Word2Vec(utils.SaveLoad):
         if self.negative:
             self.syn1neg = np.zeros((len(self.wv), self.layer1_size), dtype=REAL)
 
-    def update_weights(self):
+    def update_weights(self, mimic_in_vocab=None, mimic_init_original=True):
         """Copy all the existing weights, and reset the weights for the newly added vocabulary."""
         logger.info("updating layer weights")
         # Raise an error if an online update is run before initial training on a corpus
@@ -878,7 +879,7 @@ class Word2Vec(utils.SaveLoad):
                 "First build the vocabulary of your model with a corpus before doing an online update."
             )
         preresize_count = len(self.wv.vectors)
-        self.wv.resize_vectors(seed=self.seed)
+        self.wv.resize_vectors(seed=self.seed, mimic_in_vocab=mimic_in_vocab, mimic_init_original=mimic_init_original)
         gained_vocab = len(self.wv.vectors) - preresize_count
 
         if self.hs:

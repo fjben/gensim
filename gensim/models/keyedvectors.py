@@ -375,10 +375,21 @@ class KeyedVectors(utils.SaveLoad):
         index = self.get_index(key)
         return self.expandos[attr][index]
 
-    def resize_vectors(self, seed=0):
+    def resize_vectors(self, seed=0, mimic_in_vocab=None, mimic_init_original=True):
         """Make underlying vectors match index_to_key size; random-initialize any new rows."""
         target_shape = (len(self.index_to_key), self.vector_size)
-        self.vectors = prep_vectors(target_shape, prior_vectors=self.vectors, seed=seed)
+
+        if ((mimic_in_vocab is not None) and (len(mimic_in_vocab)==1) and (mimic_in_vocab[0].endswith('_mimic'))):
+            original_word = mimic_in_vocab[0][:-len('_mimic')]
+        else:
+            raise Exception
+        idx_to_key = self.index_to_key.index(original_word)
+        mimic_vector = self.vectors[idx_to_key]
+        if ((mimic_in_vocab is not None) and (mimic_init_original == True)):
+            self.vectors = prep_vectors(target_shape, prior_vectors=self.vectors, seed=seed, mimic_vector=mimic_vector)
+        else:
+            self.vectors = prep_vectors(target_shape, prior_vectors=self.vectors, seed=seed)
+
         self.allocate_vecattrs()
         self.norms = None
 
@@ -2101,7 +2112,7 @@ def pseudorandom_weak_vector(size, seed_string=None, hashfxn=hash):
     return (once.random(size).astype(REAL) - 0.5) / size
 
 
-def prep_vectors(target_shape, prior_vectors=None, seed=0, dtype=REAL):
+def prep_vectors(target_shape, prior_vectors=None, seed=0, mimic_vector=None, dtype=REAL):
     """Return a numpy array of the given shape. Reuse prior_vectors object or values
     to extent possible. Initialize new values randomly if requested.
 
@@ -2117,4 +2128,9 @@ def prep_vectors(target_shape, prior_vectors=None, seed=0, dtype=REAL):
     new_vectors -= 1.0  # [-1.0, 1.0)
     new_vectors /= vector_size
     new_vectors[0:prior_vectors.shape[0], 0:prior_vectors.shape[1]] = prior_vectors
+
+    #### (insert description)
+    if mimic_vector is not None:
+        new_vectors[-1, 0:prior_vectors.shape[1]] = mimic_vector
+
     return new_vectors
